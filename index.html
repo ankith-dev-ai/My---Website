@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>MediFind AI — ULTRA v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+<!-- ✅ External CSS -->
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<canvas id="pc"></canvas>
+<div class="gbg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="toast" id="toast">✅ Done</div>
+
+<!-- NOTIFICATION PANEL -->
+<div class="notif-overlay" id="notif-ov" onclick="closeNotifs()"></div>
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-hdr">
+    <div class="notif-title">🔔 Notifications</div>
+    <div class="notif-close" onclick="closeNotifs()">✕</div>
+  </div>
+  <div class="notif-list" id="notif-list"></div>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="modal-ov" id="bk-modal" onclick="closeBkModal(event)">
+  <div class="modal-sh" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📅 Book Appointment</div>
+    <div class="modal-sub" id="bk-sub">// SELECT DATE · TIME · CONFIRM</div>
+    <div class="modal-doc-row">
+      <div class="modal-ava" id="bk-ava">🏥</div>
+      <div>
+        <div class="mdn" id="bk-name">—</div>
+        <div class="mds" id="bk-spec">—</div>
+        <div class="mda" id="bk-addr">—</div>
+      </div>
+    </div>
+    <div class="slbl">// Select Date</div>
+    <div class="date-scr" id="date-scr"></div>
+    <div class="slbl">// Available Slots</div>
+    <div class="slots-g" id="time-slots"></div>
+    <div class="slbl" style="margin-bottom:8px">// Your Mobile</div>
+    <input class="minp" id="bk-phone" type="tel" maxlength="15" placeholder="Mobile number for SMS" inputmode="numeric"/>
+    <div class="slbl" style="margin-bottom:8px">// SMS Preview</div>
+    <div class="sms-prev">
+      <div class="sms-tabs">
+        <div class="sms-tab on" onclick="switchSmsTab('p',this)">📲 Patient SMS</div>
+        <div class="sms-tab" onclick="switchSmsTab('d',this)">🏥 Clinic Alert</div>
+      </div>
+      <div class="sms-body">
+        <div class="sms-device">
+          <div class="sms-from" id="sms-from">MEDIFIND_AI</div>
+          <div class="sms-bubble" id="sms-txt">—</div>
+          <div class="sms-time" id="sms-time">Delivered · Now</div>
+        </div>
+      </div>
+    </div>
+    <button class="confirm-btn" id="confirm-btn" onclick="confirmBooking()">✅ Confirm &amp; Send Notifications</button>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div class="succ-ov" id="succ-ov" onclick="closeSucc()">
+  <div class="succ-card" onclick="event.stopPropagation()">
+    <div class="succ-icon">🎉</div>
+    <div class="succ-title">Appointment Confirmed!</div>
+    <div class="succ-sub" id="succ-sub">Your booking is live.</div>
+    <div class="succ-rows" id="succ-rows"></div>
+    <button class="done-btn" onclick="closeSucc();goScreen('mybookings')">View My Bookings →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 1: HOME / FIND DOCTORS
+════════════════════════════════════════════ -->
+<div class="screen active" id="scr-home">
+  <div class="app-header">
+    <div class="eyebrow"><div class="el"></div>AI-POWERED HEALTHCARE NAVIGATION<div class="er"></div></div>
+    <div class="logo-row">
+      <div class="logo-box">🩺</div>
+      <div class="logo-t">
+        <div class="logo-name">Medi<span>Find</span></div>
+        <div class="logo-ver">v4.0 · ULTRA</div>
+      </div>
+    </div>
+    <div class="tagline">Real GPS · Real Hospitals · Any City · Any Country</div>
+    <div class="stat-strip">
+      <div class="stat-i"><div class="stat-n" id="stat-h">5M+</div><div class="stat-l">Hospitals</div></div>
+      <div class="sdiv"></div>
+      <div class="stat-i"><div class="stat-n">25+</div><div class="stat-l">Specialties</div></div>
+      <div class="sdiv"></div>
+      <div class="stat-i"><div class="stat-n">🌍</div><div class="stat-l">Worldwide</div></div>
+    </div>
+  </div>
+
+  <div class="sw" style="margin-top:14px">
+    <button class="emg-btn" onclick="callEmergency()">
+      <span class="emg-icon">🚨</span>EMERGENCY — CALL 112 / 108 NOW<span class="emg-icon">🚨</span>
+    </button>
+  </div>
+
+  <!-- LOCATION -->
+  <div class="sw">
+    <div class="gc loc-card">
+      <div class="loc-top">
+        <div class="loc-ping"><div class="lpd det" id="lpd"></div><div class="lpr"></div></div>
+        <div class="loc-inf">
+          <div class="loc-city" id="lcity">Scanning GPS…</div>
+          <div class="loc-coord" id="lcoord">Allow location access</div>
+        </div>
+        <button class="loc-rbtn" onclick="refreshLoc()">↺ Refresh</button>
+      </div>
+      <div class="rad-row">
+        <span class="rad-lbl">Radius //</span>
+        <div class="rad-pills">
+          <div class="rpill" data-r="1000" onclick="pickRad(this)">1 km</div>
+          <div class="rpill on" data-r="2000" onclick="pickRad(this)">2 km</div>
+          <div class="rpill" data-r="5000" onclick="pickRad(this)">5 km</div>
+          <div class="rpill" data-r="10000" onclick="pickRad(this)">10 km</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="sw">
+    <div class="gc2">
+      <div class="ch"><div class="chi">👤</div><div class="cht">Patient Information</div><div class="chb">// FORM_INPUT</div></div>
+      <div class="fb">
+        <div class="fg2">
+          <div class="fg"><div class="fl">// Full Name</div><input class="fi" id="inp-name" type="text" placeholder="Your full name" autocomplete="off"/></div>
+          <div class="fg"><div class="fl">// Age</div><input class="fi" id="inp-age" type="number" placeholder="Age" min="0" max="120" inputmode="numeric"/></div>
+          <div class="fg"><div class="fl">// Gender</div>
+            <select class="fi" id="inp-gender">
+              <option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+            </select>
+          </div>
+          <div class="fg"><div class="fl">// Mobile</div><input class="fi" id="inp-phone" type="tel" maxlength="15" placeholder="+91 or international" inputmode="numeric"/></div>
+          <div class="fg s2"><div class="fl">// Symptoms — Describe</div><textarea class="fi" id="inp-sym" rows="2" placeholder="e.g. chest pain, fever for 3 days…" style="resize:vertical"></textarea></div>
+          <div class="fg s2">
+            <div class="fl">// Symptom Quick Select</div>
+            <div id="sym-groups" style="margin-top:6px"></div>
+          </div>
+          <div class="fg s2"><div class="fl">// Urgency Level</div>
+            <div class="urow">
+              <div class="uchip u-emg" data-u="immediate" onclick="pickUrgency(this)">🔴 Emergency</div>
+              <div class="uchip u-mod on" data-u="urgent" onclick="pickUrgency(this)">🟡 Urgent Today</div>
+              <div class="uchip u-rtn" data-u="routine" onclick="pickUrgency(this)">🟢 Routine</div>
+            </div>
+          </div>
+        </div>
+        <button class="find-btn" id="find-btn" onclick="findDoctors()">
+          <span>⚡</span> SCAN NEARBY HOSPITALS <span class="btn-tag">[ AI ]</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADER -->
+  <div class="sw" id="loader-wrap" style="display:none">
+    <div class="gc2"><div class="loader-inner">
+      <div class="lring-wrap"><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="lcore"></div></div>
+      <div class="l-title">Scanning Real Hospitals…</div>
+      <div class="l-sub">// QUERYING OPENSTREETMAP</div>
+      <div class="lsteps">
+        <div class="lstep" id="ls1"><span class="lstep-ic">📍</span>acquiring_gps();</div>
+        <div class="lstep" id="ls2"><span class="lstep-ic">🌍</span>reverse_geocode();</div>
+        <div class="lstep" id="ls3"><span class="lstep-ic">🧠</span>ai_symptom_analysis();</div>
+        <div class="lstep" id="ls4"><span class="lstep-ic">🏥</span>fetch_real_hospitals();</div>
+        <div class="lstep" id="ls5"><span class="lstep-ic">⭐</span>rank_and_score();</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- AI CARD -->
+  <div class="sw" id="ai-wrap" style="display:none">
+    <div class="gc2"><div class="ai-inner">
+      <div class="ai-head"><div class="ai-badge">✦ AI_ANALYSIS</div><div class="ai-title">Symptom Assessment</div></div>
+      <div class="ai-txt" id="ai-txt">—</div>
+      <div class="ai-tags" id="ai-tags"></div>
+      <div class="urg-row">
+        <div class="urg-lbl"><span>// URGENCY</span><span id="urg-pct">—</span></div>
+        <div class="urg-track"><div class="urg-fill" id="urg-fill" style="width:0%"></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="sw" id="res-wrap" style="display:none">
+    <div class="res-head">
+      <div class="res-title" id="res-title">// Nearby Hospitals</div>
+      <div class="res-count" id="res-count">0</div>
+    </div>
+    <div class="sort-row">
+      <div class="spill on" onclick="sortBy('dist',this)">📍 Nearest</div>
+      <div class="spill" onclick="sortBy('match',this)">🎯 Best Match</div>
+      <div class="spill" onclick="sortBy('rating',this)">⭐ Top Rated</div>
+    </div>
+    <div id="doc-list"></div>
+  </div>
+
+  <!-- MAP -->
+  <div class="sw" id="map-outer" style="display:none">
+    <div class="gc2">
+      <div class="map-head">
+        <div class="map-title">🗺 Route → <span id="map-dest">—</span></div>
+        <div class="map-close" onclick="closeMap()">✕</div>
+      </div>
+      <div class="map-area" id="map-area"></div>
+      <div class="eta-bar">
+        <div><div class="eta-lbl">// EST. ARRIVAL</div><div class="eta-big" id="eta-v">—</div></div>
+        <div class="eta-right"><div id="eta-d">—</div><div id="eta-m" style="font-size:11px;opacity:.7;margin-top:2px">🚗 By Car</div></div>
+      </div>
+      <div class="rsteps" id="route-list"></div>
+      <button class="gmap-btn" onclick="openGMaps()">🌐 Open Google Maps Live Navigation →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 2: HOSPITAL DETAIL
+════════════════════════════════════════════ -->
+<div class="screen" id="scr-detail">
+  <div class="detail-hero">
+    <div class="detail-back" onclick="goScreen('home')">← Back to Results</div>
+    <div class="gc2 detail-card" id="detail-content"><!-- injected --></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 3: MY BOOKINGS
+════════════════════════════════════════════ -->
+<div class="screen" id="scr-mybookings">
+  <div class="sw" style="margin-top:28px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div>
+        <div class="mybk-header">My Bookings</div>
+        <div style="font-family:var(--fm);font-size:11px;color:var(--text3);margin-top:2px">// YOUR_APPOINTMENTS</div>
+      </div>
+      <button onclick="goScreen('home')" style="padding:8px 16px;background:rgba(0,210,255,.08);border:1px solid var(--border2);color:var(--neon);border-radius:var(--rp);font-family:var(--fm);font-size:11px;cursor:pointer;touch-action:manipulation">+ New</button>
+    </div>
+    <div id="bk-list"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 4: QUEUE LIVE
+════════════════════════════════════════════ -->
+<div class="screen" id="scr-queue">
+  <div class="sw" style="margin-top:28px">
+    <div style="margin-bottom:16px">
+      <div class="qlive-hdr">Live Queue</div>
+      <div class="qlive-sub" id="ql-sub">// SELECT_BOOKING</div>
+    </div>
+    <div id="queue-select-wrap" style="margin-bottom:14px"></div>
+    <div id="queue-content"><!-- injected --></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bot-nav">
+  <button class="nav-item on" onclick="goScreen('home')" id="nav-home">
+    <span class="ni">🔍</span><span class="nl">Find</span>
+  </button>
+  <button class="nav-item" onclick="goScreen('mybookings')" id="nav-mybookings">
+    <span class="ni">📋</span><span class="nl">Bookings</span>
+    <span class="nav-badge" id="bk-badge" style="display:none">0</span>
+  </button>
+  <button class="nav-item" onclick="goScreen('queue')" id="nav-queue">
+    <span class="ni">🏥</span><span class="nl">Queue</span>
+    <span class="nav-badge" id="q-badge" style="display:none">!</span>
+  </button>
+  <button class="nav-item" style="position:relative" onclick="openNotifs()" id="nav-notif">
+    <span class="ni">🔔</span><span class="nl">Alerts</span>
+    <span class="nav-badge" id="notif-badge" style="display:none">0</span>
+  </button>
+</nav>
+
+<!-- ✅ External JavaScript -->
+<script src="script.js"></script>
+</body>
+</html>
